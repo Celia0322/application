@@ -4,7 +4,7 @@ import { open } from "sqlite";
 
 const app = express();
 app.use(express.json());
-app.use(express.static("backend")); // Serve static files (e.g., HTML, CSS)
+app.use(express.static("backend/public")); // Serve static files from "public" directory
 
 let db;
 
@@ -25,7 +25,12 @@ async function openDb() {
 }
 
 // Initialize DB connection
-openDb().catch(err => console.log(err));
+openDb().catch(err => console.error("Failed to connect to database:", err));
+
+// Serve index.html at root
+app.get("/", (req, res) => {
+  res.sendFile("index.html", { root: "backend/public" });
+});
 
 // POST request: Add new item
 app.post("/items", async (req, res) => {
@@ -51,6 +56,7 @@ app.delete("/items/:id", async (req, res) => {
 app.listen(3000, () => {
   console.log("Server running on http://localhost:3000");
 });
+
 
 
 
