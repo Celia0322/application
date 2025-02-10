@@ -1,41 +1,56 @@
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { DB } from "https://deno.land/x/sqlite@v3.7.2/mod.ts";
+import express from "express";
+import sqlite3 from "sqlite3";
+import { open } from "sqlite";
 
-const db = new DB("database.db");
+const app = express();
+app.use(express.json());
+app.use(express.static("backend")); // Serve static files (e.g., HTML, CSS)
 
-// Create table if it doesn't exist
-db.execute(`
-  CREATE TABLE IF NOT EXISTS items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    description TEXT
-  )
-`);
+let db;
 
-serve(async (req) => {
-  const url = new URL(req.url);
-  const pathname = url.pathname;
+// Open or create the SQLite database
+async function openDb() {
+  db = await open({
+    filename: './backend/database.db',
+    driver: sqlite3.Database
+  });
 
-  if (req.method === "GET" && pathname === "/items") {
-    // Fetch all items
-    const rows = [...db.query("SELECT * FROM items")];
-    return new Response(JSON.stringify(rows), {
-      headers: { "Content-Type": "application/json" },
-    });
-  } else if (req.method === "POST" && pathname === "/items") {
-    // Add a new item
-    const body = await req.json();
-    db.query("INSERT INTO items (name, description) VALUES (?, ?)", [
-      body.name,
-      body.description,
-    ]);
-    return new Response("Item added successfully");
-  } else if (req.method === "DELETE" && pathname.startsWith("/items/")) {
-    // Delete an item by ID
-    const id = pathname.split("/")[2];
-    db.query("DELETE FROM items WHERE id = ?", [id]);
-    return new Response("Item deleted successfully");
-  }
+  await db.run(`
+    CREATE TABLE IF NOT EXISTS items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT,
+      description TEXT
+    )
+  `);
+}
 
-  return new Response("Not found", { status: 404 });
+// Initialize DB connection
+openDb().catch(err => console.log(err));
+
+// POST request: Add new item
+app.post("/items", async (req, res) => {
+  const { name, description } = req.body;
+  await db.run('INSERT INTO items (name, description) VALUES (?, ?)', [name, description]);
+  res.status(201).send("Item added successfully!");
 });
+
+// GET request: Retrieve all items
+app.get("/items", async (req, res) => {
+  const items = await db.all('SELECT * FROM items');
+  res.json(items);
+});
+
+// DELETE request: Delete item by ID
+app.delete("/items/:id", async (req, res) => {
+  const { id } = req.params;
+  await db.run('DELETE FROM items WHERE id = ?', [id]);
+  res.status(200).send("Item deleted successfully!");
+});
+
+// Start server
+app.listen(3000, () => {
+  console.log("Server running on http://localhost:3000");
+});
+
+
+

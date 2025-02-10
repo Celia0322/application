@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organized Single-Page Website</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+            scroll-behavior: smooth;
+        }
+
+        header {
+            background-color: #ac4caf;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        nav {
+            background-color: #333;
+            color: white;
+            padding: 0.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        nav ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        nav ul li {
+            margin: 0 1rem;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        nav ul li a:hover {
+            background-color: #575757;
+        }
+
+        section {
+            padding: 2rem;
+            margin: 1rem auto;
+            max-width: 800px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        section h2 {
+            text-align: center;
+        }
+
+        footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Welcome to My Single-Page Website</h1>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="#section1">Home</a></li>
+            <li><a href="#section2">About</a></li>
+            <li><a href="#section3">Content</a></li>
+        </ul>
+    </nav>
+    <main>
+        <section id="section1">
+            <h2>Home</h2>
+            <p>This is the first section of the page. It contains some introductory content for users to read.</p>
+
+            <!-- Create Item Form -->
+            <h3>Add New Item</h3>
+            <form id="addItemForm">
+                <input type="text" id="name" placeholder="Name" required><br><br>
+                <textarea id="description" placeholder="Description" required></textarea><br><br>
+                <button type="submit">Add Item</button>
+            </form>
+
+            <!-- Display All Items -->
+            <h3>Items</h3>
+            <button id="loadItemsBtn">Load Items</button>
+            <ul id="itemsList"></ul>
+
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2025 Meng Wang. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Handle Add Item
+        document.getElementById("addItemForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById("name").value;
+            const description = document.getElementById("description").value;
+
+            await fetch("/items", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ name, description })
+            });
+
+            document.getElementById("name").value = "";
+            document.getElementById("description").value = "";
+
+            alert("Item added!");
+        });
+
+        // Handle Load Items
+        document.getElementById("loadItemsBtn").addEventListener("click", async () => {
+            const response = await fetch("/items");
+            const items = await response.json();
+            const itemsList = document.getElementById("itemsList");
+            itemsList.innerHTML = "";
+
+            items.forEach(item => {
+                const li = document.createElement("li");
+                li.innerHTML = `${item.name} - ${item.description} <button onclick="deleteItem(${item.id})">Delete</button>`;
+                itemsList.appendChild(li);
+            });
+        });
+
+        // Handle Delete Item
+        async function deleteItem(id) {
+            await fetch(`/items/${id}`, {
+                method: "DELETE"
+            });
+
+            alert("Item deleted!");
+            document.getElementById("loadItemsBtn").click();  // Reload the items list
+        }
+    </script>
+</body>
+</html>
+
+
+
